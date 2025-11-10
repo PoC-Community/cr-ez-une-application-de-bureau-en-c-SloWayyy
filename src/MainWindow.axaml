@@ -8,25 +8,46 @@
     <StackPanel Margin="20">
         <TextBlock Text="My To-Do List" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,10"/>
 
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-            <TextBox x:Name="TaskInput" Width="250" Watermark="Enter a task..."/>
-            <Button x:Name="AddButton" Content="Add" Margin="10,0,0,0" Width="80"/>
+        <StackPanel Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                <TextBox x:Name="TaskInput" Width="200" Watermark="Enter a task..."/>
+                <Button x:Name="AddButton" Content="Add" Margin="10,0,0,0" Width="80"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                <TextBox x:Name="TagsInput" Width="150" Watermark="Tags (comma-separated)" Margin="0,0,10,0"/>
+                <DatePicker x:Name="DueDatePicker" Width="120" Margin="0,0,10,0"/>
+            </StackPanel>
         </StackPanel>
 
-        <ListBox x:Name="TaskList" Height="250">
+        <ListBox x:Name="TaskList" Height="200">
             <ListBox.ItemTemplate>
                 <DataTemplate DataType="{x:Type models:TaskItem}">
-                    <StackPanel Orientation="Horizontal" Margin="5">
-                        <CheckBox IsChecked="{Binding IsCompleted}" Margin="0,0,10,0"/>
-                        <TextBlock Text="{Binding Title}" VerticalAlignment="Center"/>
+                    <StackPanel Margin="5">
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox IsChecked="{Binding IsCompleted}" Margin="0,0,10,0"/>
+                            <TextBlock Text="{Binding Title}" VerticalAlignment="Center" FontWeight="Bold"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="25,2,0,0">
+                            <TextBlock Text="{Binding Tags}" 
+                                       FontSize="11" 
+                                       Foreground="Blue"
+                                       Margin="0,0,10,0"/>
+                            <TextBlock Text="{Binding DueDate, StringFormat='Due: {0:MM/dd/yyyy}'}" 
+                                       FontSize="11"
+                                       Foreground="Gray"/>
+                        </StackPanel>
                     </StackPanel>
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+        <StackPanel Orientation="Horizontal" Margin="0,10,0,5">
+            <Button x:Name="CompleteAllButton" Content="Complete All" Width="100"/>
+            <Button x:Name="ClearCompletedButton" Content="Clear Completed" Margin="10,0,0,0" Width="120"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
             <Button x:Name="DeleteButton" Content="Delete selected" Width="120"/>
-            <Button x:Name="SaveButton" Content="Save to JSON" Margin="10,0,0,0" Width="120"/>
+            <TextBlock x:Name="SaveStatusText" Text="Saved" Margin="10,5,0,0" VerticalAlignment="Center" Foreground="Green" IsVisible="False"/>
         </StackPanel>
     </StackPanel>
 </Window>

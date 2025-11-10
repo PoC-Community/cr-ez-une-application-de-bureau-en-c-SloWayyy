@@ -3,8 +3,11 @@ using Avalonia.Interactivity;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 using TodoListApp.Models;
 
 namespace TodoListApp;
@@ -29,15 +32,48 @@ public partial class MainWindow : Window
 
         AddButton.Click += OnAddClick;
         DeleteButton.Click += OnDeleteClick;
-        SaveButton.Click += OnSaveClick;
+        CompleteAllButton.Click += OnCompleteAllClick;
+        ClearCompletedButton.Click += OnClearCompletedClick;
+        
+        // Auto-save on collection changes
+        _tasks.CollectionChanged += (s, e) => 
+        {
+            AutoSave();
+            // Attach property change handlers to new items
+            if (e.NewItems != null)
+            {
+                foreach (var item in e.NewItems)
+                {
+                    if (item is TaskItem task)
+                    {
+                        task.PropertyChanged += (sender, args) => AutoSave();
+                    }
+                }
+            }
+        };
+        
+        // Attach property change handlers to existing tasks
+        foreach (var task in _tasks)
+        {
+            task.PropertyChanged += (sender, args) => AutoSave();
+        }
     }
 
     private void OnAddClick(object? sender, RoutedEventArgs e)
     {
         if (!string.IsNullOrWhiteSpace(TaskInput.Text))
         {
-            _tasks.Add(new TaskItem { Title = TaskInput.Text });
+            var newTask = new TaskItem 
+            { 
+                Title = TaskInput.Text,
+                Tags = TagsInput.Text?.Trim() ?? string.Empty,
+                DueDate = DueDatePicker.SelectedDate?.DateTime
+            };
+            _tasks.Add(newTask);
             TaskInput.Text = string.Empty;
+            TagsInput.Text = string.Empty;
+            DueDatePicker.SelectedDate = null;
+            AutoSave();
         }
     }
 
@@ -46,10 +82,30 @@ public partial class MainWindow : Window
         if (TaskList.SelectedItem is TaskItem selected)
         {
             _tasks.Remove(selected);
+            AutoSave();
         }
     }
 
-    private void OnSaveClick(object? sender, RoutedEventArgs e)
+    private void OnCompleteAllClick(object? sender, RoutedEventArgs e)
+    {
+        foreach (var task in _tasks)
+        {
+            task.IsCompleted = true;
+        }
+        AutoSave();
+    }
+
+    private void OnClearCompletedClick(object? sender, RoutedEventArgs e)
+    {
+        var completedTasks = _tasks.Where(t => t.IsCompleted).ToList();
+        foreach (var task in completedTasks)
+        {
+            _tasks.Remove(task);
+        }
+        AutoSave();
+    }
+
+    private void AutoSave()
     {
         try
         {
@@ -69,12 +125,18 @@ public partial class MainWindow : Window
 
             // Write to file
             File.WriteAllText(_dataFilePath, jsonString);
+            
+            // Show save status
+            SaveStatusText.IsVisible = true;
+            Task.Delay(2000).ContinueWith(_ => 
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => SaveStatusText.IsVisible = false);
+            });
         }
         catch (Exception ex)
         {
-            // Handle errors (permissions, disk space, etc.)
-            // Minimal error handling - could be improved with user notification
-            System.Diagnostics.Debug.WriteLine($"Error saving tasks: {ex.Message}");
+            // Handle errors silently for auto-save
+            System.Diagnostics.Debug.WriteLine($"Error auto-saving tasks: {ex.Message}");
         }
     }
 
